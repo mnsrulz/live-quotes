@@ -36,7 +36,7 @@
         latest.textContent = new Date(data.t).toLocaleTimeString()
 
         // optional: append log
-        log.textContent += `${data.t}\n`
+        log.textContent += `${data.t} - ${data.}\n`
 
         // keep last ~20 lines only
         const lines = log.textContent.split('\n').slice(-20)

@@ -2,8 +2,8 @@ import { ApiException, fromHono } from "chanfana";
 import { Hono } from "hono";
 import { tasksRouter } from "./endpoints/tasks/router";
 import { ContentfulStatusCode } from "hono/utils/http-status";
-import { streamSSE } from 'hono/streaming'
-
+import { streamSSE } from 'hono/streaming';
+import YahooFinance from 'yahoo-finance2';
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
 
@@ -43,17 +43,67 @@ const openapi = fromHono(app, {
 // Register Tasks Sub router
 openapi.route("/tasks", tasksRouter);
 
+const yf = new YahooFinance({
+	suppressNotices: ["yahooSurvey"], // optional
+});
 
 app.get("/events", (c) => {
+	const normalizedSymbol = "AAPL"; // Replace with actual symbol
 	return streamSSE(c, async (stream) => {
 		while (true) {
+			const priceData = fetchPrice(normalizedSymbol);
 			await stream.writeSSE({
-				data: JSON.stringify({ t: Date.now() }),
+				data: JSON.stringify({
+					t: Date.now(),
+					...priceData
+				}),
 			})
 			await stream.sleep(300)
 		}
 	})
 });
+
+async function fetchPrice(symbol: string) {
+	const {
+		marketState,
+		hasPrePostMarketData,
+		regularMarketPrice,
+		regularMarketChange,
+		regularMarketChangePercent,
+		postMarketPrice,
+		postMarketChange,
+		postMarketChangePercent,
+		preMarketPrice,
+		preMarketChange,
+		preMarketChangePercent,
+	} = await yf.quoteCombine(symbol, {}, {
+		validateResult: false
+	}) as any;
+
+	switch (marketState) {
+		case "PRE":
+			return {
+				price: preMarketPrice,
+				change: preMarketChange,
+				changePercent: preMarketChangePercent,
+				state: "PRE"
+			};
+		case "REGULAR":
+			return {
+				price: regularMarketPrice,
+				change: regularMarketChange + preMarketChange,
+				changePercent: regularMarketChangePercent + preMarketChangePercent,	//change it to accurate
+				state: "REGULAR"
+			};
+		default:
+			return {
+				price: postMarketPrice,
+				change: preMarketChange + regularMarketChange + postMarketChange,
+				changePercent: regularMarketChangePercent + preMarketChangePercent + postMarketChangePercent, //change it to accurate
+				state: "POST"
+			};
+	}
+}
 
 // Export the Hono app
 export default app;
