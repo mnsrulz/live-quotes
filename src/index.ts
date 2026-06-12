@@ -51,7 +51,7 @@ app.get("/events", (c) => {
 	const normalizedSymbol = c.req.query("s") || 'AAPL';
 	return streamSSE(c, async (stream) => {
 		while (true) {
-			const priceData = fetchPrice(normalizedSymbol);
+			const priceData = await fetchPrice(normalizedSymbol);
 			await stream.writeSSE({
 				data: JSON.stringify({
 					t: Date.now(),
@@ -66,7 +66,6 @@ app.get("/events", (c) => {
 async function fetchPrice(symbol: string) {
 	const {
 		marketState,
-		hasPrePostMarketData,
 		regularMarketPrice,
 		regularMarketChange,
 		regularMarketChangePercent,
@@ -92,14 +91,14 @@ async function fetchPrice(symbol: string) {
 			return {
 				price: regularMarketPrice,
 				change: regularMarketChange + preMarketChange,
-				changePercent: regularMarketChangePercent + preMarketChangePercent,	//change it to accurate
+				changePercent: regularMarketChangePercent + preMarketChangePercent,
 				state: "REGULAR"
 			};
 		default:
 			return {
 				price: postMarketPrice,
 				change: preMarketChange + regularMarketChange + postMarketChange,
-				changePercent: regularMarketChangePercent + preMarketChangePercent + postMarketChangePercent, //change it to accurate
+				changePercent: regularMarketChangePercent + preMarketChangePercent + postMarketChangePercent,
 				state: "POST"
 			};
 	}
