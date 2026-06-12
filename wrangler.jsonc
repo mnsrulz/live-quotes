@@ -6,11 +6,7 @@
 	"observability": {
 		"enabled": true
 	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "rapid-grass-bd5d-db",
-			"database_id": "9ecafd41-abee-49c8-8fbf-09925134e835"
-		}
-	]
+	"assets": {
+		"directory": "./static"
+	}
 }

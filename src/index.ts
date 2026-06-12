@@ -2,6 +2,7 @@ import { ApiException, fromHono } from "chanfana";
 import { Hono } from "hono";
 import { tasksRouter } from "./endpoints/tasks/router";
 import { ContentfulStatusCode } from "hono/utils/http-status";
+import { streamSSE } from 'hono/streaming'
 
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
@@ -42,6 +43,17 @@ const openapi = fromHono(app, {
 // Register Tasks Sub router
 openapi.route("/tasks", tasksRouter);
 
+
+app.get("/events", (c) => {
+	return streamSSE(c, async (stream) => {
+		while (true) {
+			await stream.writeSSE({
+				data: JSON.stringify({ t: Date.now() }),
+			})
+			await stream.sleep(300)
+		}
+	})
+});
 
 // Export the Hono app
 export default app;
