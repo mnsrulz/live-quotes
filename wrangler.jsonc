@@ -1,5 +1,5 @@
 {
-	"compatibility_date": "2025-10-08",
+	"compatibility_date": "2026-06-11",
 	"main": "src/index.ts",
 	"name": "chanfana-openapi-template",
 	"upload_source_maps": true,
@@ -8,5 +8,9 @@
 	},
 	"assets": {
 		"directory": "./static"
-	}
+	},
+	"compatibility_flags": [
+    	"nodejs_compat"
+  	],
+	// Set this to today's date
 }
