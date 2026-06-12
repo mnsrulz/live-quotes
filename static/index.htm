@@ -27,16 +27,21 @@
       const latest = document.getElementById('latest')
       const log = document.getElementById('log')
 
-      const es = new EventSource('/events')
+      // read `s` from this page's query string and pass to /events
+      const params = new URLSearchParams(window.location.search)
+      const s = params.get('s') || 'AAPL'
+
+      const es = new EventSource(`/events?s=${encodeURIComponent(s)}`)
 
       es.onmessage = (e) => {
         const data = JSON.parse(e.data)
 
-        // update latest value
-        latest.textContent = new Date(data.t).toLocaleTimeString()
+        // update latest value with time, price, and change
+        const timeStr = new Date(data.t).toLocaleTimeString()
+        latest.textContent = `${timeStr} — ${data.price ?? data.p ?? '—'} (${data.change ?? data.c ?? '—'})`
 
-        // optional: append log
-        log.textContent += `${data.t} - ${data.}\n`
+        // optional: append log with price and change
+        log.textContent += `${data.t} - ${data.price ?? data.p ?? '—'} (${data.change ?? data.c ?? '—'})\n`
 
         // keep last ~20 lines only
         const lines = log.textContent.split('\n').slice(-20)

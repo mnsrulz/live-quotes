@@ -48,7 +48,7 @@ const yf = new YahooFinance({
 });
 
 app.get("/events", (c) => {
-	const normalizedSymbol = "AAPL"; // Replace with actual symbol
+	const normalizedSymbol = c.req.query("s") || 'AAPL';
 	return streamSSE(c, async (stream) => {
 		while (true) {
 			const priceData = fetchPrice(normalizedSymbol);
