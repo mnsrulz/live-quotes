@@ -51,7 +51,7 @@ const yf = new YahooFinance({
 app.get("/events", (c) => {
 	const normalizedSymbol = c.req.query("s") || 'AAPL';
 	return streamSSE(c, async (stream) => {
-		while (true) {
+		while (!stream.aborted) {
 			const priceData = await fetchPrice(normalizedSymbol);
 			await stream.writeSSE({
 				data: JSON.stringify({
