@@ -80,41 +80,46 @@ async function fetchPrice(symbol: string) {
 		validateResult: false
 	}) as any;
 
+	// Default null/undefined values to 0
+	const preMarketChangeVal = preMarketChange ?? 0;
+	const regularMarketChangeVal = regularMarketChange ?? 0;
+	const postMarketChangeVal = postMarketChange ?? 0;
+
 	switch (marketState) {
 		case "PRE":
 			return {
 				price: preMarketPrice,
-				change: preMarketChange,
+				change: preMarketChangeVal,
 				changePercent: preMarketChangePercent,
 				state: "PRE",
 				meta: {
-					preMarketChange ,
-					regularMarketChange ,
-					postMarketChange
+					preMarketChange: preMarketChangeVal,
+					regularMarketChange: regularMarketChangeVal,
+					postMarketChange: postMarketChangeVal
 				}
 			};
 		case "REGULAR":
 			return {
 				price: regularMarketPrice,
-				change: regularMarketChange + preMarketChange,
+				change: regularMarketChangeVal + preMarketChangeVal,
 				changePercent: regularMarketChangePercent + preMarketChangePercent,
 				state: "REGULAR",
 				meta: {
-					preMarketChange ,
-					regularMarketChange ,
-					postMarketChange
+					preMarketChange: preMarketChangeVal,
+					regularMarketChange: regularMarketChangeVal,
+					postMarketChange: postMarketChangeVal
 				}
 			};
 		default:
 			return {
 				price: postMarketPrice,
-				change: preMarketChange + regularMarketChange + postMarketChange,
+				change: preMarketChangeVal + regularMarketChangeVal + postMarketChangeVal,
 				changePercent: regularMarketChangePercent + preMarketChangePercent + postMarketChangePercent,
 				state: "POST",
 				meta: {
-					preMarketChange ,
-					regularMarketChange ,
-					postMarketChange
+					preMarketChange: preMarketChangeVal,
+					regularMarketChange: regularMarketChangeVal,
+					postMarketChange: postMarketChangeVal
 				}
 			};
 	}
