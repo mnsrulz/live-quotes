@@ -3,7 +3,8 @@ import { Hono } from "hono";
 import { tasksRouter } from "./endpoints/tasks/router";
 import { ContentfulStatusCode } from "hono/utils/http-status";
 import { streamSSE } from 'hono/streaming';
-import YahooFinance from "https://esm.sh/yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
+
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
 
