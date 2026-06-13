@@ -86,21 +86,36 @@ async function fetchPrice(symbol: string) {
 				price: preMarketPrice,
 				change: preMarketChange,
 				changePercent: preMarketChangePercent,
-				state: "PRE"
+				state: "PRE",
+				meta: {
+					preMarketChange ,
+					regularMarketChange ,
+					postMarketChange
+				}
 			};
 		case "REGULAR":
 			return {
 				price: regularMarketPrice,
 				change: regularMarketChange + preMarketChange,
 				changePercent: regularMarketChangePercent + preMarketChangePercent,
-				state: "REGULAR"
+				state: "REGULAR",
+				meta: {
+					preMarketChange ,
+					regularMarketChange ,
+					postMarketChange
+				}
 			};
 		default:
 			return {
 				price: postMarketPrice,
 				change: preMarketChange + regularMarketChange + postMarketChange,
 				changePercent: regularMarketChangePercent + preMarketChangePercent + postMarketChangePercent,
-				state: "POST"
+				state: "POST",
+				meta: {
+					preMarketChange ,
+					regularMarketChange ,
+					postMarketChange
+				}
 			};
 	}
 }
