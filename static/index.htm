@@ -7,7 +7,19 @@
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
+    *, *::before, *::after {
+      font-family: 'Roboto Mono' !important;
+    }
+
+    [v-cloak] { 
+      display: none !important; 
+    }
+
     input[v-model="symbols"], 
     .symbol-text { 
       text-transform: uppercase; 
@@ -53,7 +65,7 @@
 </head>
 <body class="container" style="padding-top: 2rem;">
 
-  <div id="app">
+  <div id="app" v-cloak>
     <h2>Live Quotes (Vue + Pico + SSE + yfinance + CF-Worker)</h2>
 
     <form @submit.prevent="connect" role="search">
@@ -98,6 +110,14 @@
     </div>
   </div>
 
+  <footer style="margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid var(--pico-muted-border-color); text-align: center;">
+    <small>
+      <a href="https://github.com/mnsrulz/live-quotes" target="_blank" rel="noopener noreferrer" class="secondary">
+        GitHub Repository
+      </a>
+    </small>
+  </footer>
+
   <script type="module">
     import { createApp, ref, onMounted, onUnmounted, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 
@@ -141,7 +161,7 @@
           // Mimicking original artificial network latency simulation block
           await new Promise(resolve => setTimeout(resolve, 1500));
 
-          es = new EventSource(`/events?s=${encodeURIComponent(symbols.value)}`);
+          es = new EventSource(`/live-quotes?s=${encodeURIComponent(symbols.value)}`);
           
           es.onopen = () => {
             streamStatus.value = 'live'; 

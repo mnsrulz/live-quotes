@@ -5,7 +5,7 @@ import { streamSSE } from 'hono/streaming';
 import YahooFinance from "yahoo-finance2";
 
 // Start a Hono app
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono();
 
 app.onError((err, c) => {
 	if (err instanceof ApiException) {
@@ -36,7 +36,7 @@ app.get('/', (c) => {
 	return c.redirect('/index.htm');
 })
 
-app.get("/events", (c) => {
+app.get("/live-quotes", (c) => {
 	const normalizedSymbol = c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()) || ['AAPL'];
 	const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
 	return streamSSE(c, async (stream) => {
