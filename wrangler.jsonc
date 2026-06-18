@@ -11,6 +11,5 @@
 	},
 	"compatibility_flags": [
     	"nodejs_compat"
-  	],
-	// Set this to today's date
+  	]
 }

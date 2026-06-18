@@ -1,57 +1,202 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>SSE Demo</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        padding: 20px;
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SSE JSON + Vue Latest + Pico</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+
+  <style>
+    input[v-model="symbols"], 
+    .symbol-text { 
+      text-transform: uppercase; 
+    }
+
+    .input-container {
+      position: relative;
+      width: 100%;
+    }
+    .input-container input {
+      padding-right: 2.5rem !important; 
+      margin-bottom: 0; 
+    }
+
+    /* Strict alignment with Pico semantic design properties */
+    .up { color: var(--pico-ins-color); font-weight: bold; }
+    .down { color: var(--pico-del-color); font-weight: bold; }
+    td, th { vertical-align: middle; transition: background-color 0.4s ease; }
+
+    /* Flat, unbolded key hint design matching placeholder text style weights */
+    kbd.minimal-hint { 
+      font-size: 0.9rem;
+      font-weight: 400 !important;
+      background: none;
+      border: none;
+      box-shadow: none;
+      color: var(--pico-muted-color);
+      opacity: 0.6;
+    }
+
+    /* Live update micro-animations */
+    @keyframes flash-up {
+      0% { background-color: rgba(46, 204, 113, 0.2); }
+      100% { background-color: transparent; }
+    }
+    @keyframes flash-down {
+      0% { background-color: rgba(231, 76, 60, 0.2); }
+      100% { background-color: transparent; }
+    }
+    .flash-green { animation: flash-up 0.6s ease-out; }
+    .flash-red { animation: flash-down 0.6s ease-out; }
+  </style>
+</head>
+<body class="container" style="padding-top: 2rem;">
+
+  <div id="app">
+    <h2>Live Quotes (Vue + Pico + SSE + yfinance + CF-Worker)</h2>
+
+    <form @submit.prevent="connect" role="search">
+      <div class="input-container">
+        <input v-model="symbols" ref="inputField" class="symbol-text" :disabled="streamStatus === 'connecting'" placeholder="AAPL,MSFT,NVDA" />
+        <kbd class="minimal-hint" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); pointer-events: none;">/</kbd>
+      </div>
+
+      <button type="submit" :aria-busy="streamStatus === 'connecting' || streamStatus === 'reconnecting'">
+        <template v-if="streamStatus === 'connecting'">Connecting</template>
+        <template v-else-if="streamStatus === 'reconnecting'">Reconnecting</template>
+        <template v-else>Connect</template>
+      </button>
+    </form>
+
+    <p style="margin-top: -1rem; margin-bottom: 1.5rem;">
+      <small v-if="streamStatus === 'live'">Status: <ins style="text-decoration: none;">● Live Streaming</ins></small>
+      <small v-else-if="streamStatus === 'reconnecting'"><mark>▲ Connection dropped. Retrying...</mark></small>
+      <small v-else-if="streamStatus === 'connecting'"><span style="color: var(--pico-muted-color);">Negotiating worker link...</span></small>
+      <small v-else><span style="color: var(--pico-muted-color);">Idle</span></small>
+    </p>
+
+    <div class="overflow-auto">
+      <table class="striped">
+        <thead>
+          <tr>
+            <th scope="col">Symbol</th>
+            <th scope="col">Price</th>
+            <th scope="col">Change %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(q, sym) in quotes" :key="sym + '-' + q.flashCount" :class="q.flashClass">
+            <td><strong>{{ sym }}</strong></td>
+            <td>{{ formatCurrency(q.price) }}</td>
+            <td :class="q.changePercent >= 0 ? 'up' : 'down'">
+              {{ q.changePercent >= 0 ? '▲ +' : '▼ ' }}{{ q.changePercent }}%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createApp, ref, onMounted, onUnmounted, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+
+    createApp({
+      setup() {
+        const savedSymbols = localStorage.getItem('selected_symbols');
+        const symbols = ref(savedSymbols || 'AAPL,MSFT,NVDA');
+
+        const quotes = ref({});
+        
+        // Swapped primitive isLoading boolean flag out for string state tracking
+        const streamStatus = ref('idle'); 
+        
+        const inputField = ref(null);
+        let es = null;
+
+        watch(symbols, (newVal) => {
+          localStorage.setItem('selected_symbols', newVal);
+        });
+
+        const handleGlobalKeyDown = (e) => {
+          if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault(); 
+            inputField.value?.focus(); 
+          }
+        };
+
+        const formatCurrency = (val) => {
+          if (val === undefined || val === null) return '—';
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+          }).format(val);
+        };
+        
+        const connect = async () => {
+          if (es) es.close();
+          quotes.value = {}; 
+          streamStatus.value = 'connecting'; 
+
+          // Mimicking original artificial network latency simulation block
+          await new Promise(resolve => setTimeout(resolve, 1500));
+
+          es = new EventSource(`/events?s=${encodeURIComponent(symbols.value)}`);
+          
+          es.onopen = () => {
+            streamStatus.value = 'live'; 
+          };
+
+          es.addEventListener('quote', (e) => {
+            const data = JSON.parse(e.data);
+            const sym = data.symbol;
+            const oldData = quotes.value[sym];
+            
+            let flashClass = '';
+            let flashCount = oldData ? (oldData.flashCount || 0) : 0;
+
+            if (oldData && oldData.price !== undefined) {
+              if (data.price > oldData.price) {
+                flashClass = 'flash-green';
+                flashCount++;
+              } else if (data.price < oldData.price) {
+                flashClass = 'flash-red';
+                flashCount++;
+              } else {
+                flashClass = oldData.flashClass;
+              }
+            }
+
+            quotes.value[sym] = {
+              ...data,
+              flashClass,
+              flashCount
+            };
+          });
+
+          es.onerror = () => {
+            // Checks if the browser engine background auto-reconnection loop is active
+            if (es.readyState === EventSource.CONNECTING) {
+              streamStatus.value = 'reconnecting';
+            } else {
+              streamStatus.value = 'idle';
+            }
+          };
+        };
+
+        onMounted(() => {
+          window.addEventListener('keydown', handleGlobalKeyDown);
+          connect();
+        });
+
+        onUnmounted(() => {
+          window.removeEventListener('keydown', handleGlobalKeyDown);
+        });
+
+        return { symbols, quotes, streamStatus, connect, formatCurrency, inputField };
       }
-      #log {
-        margin-top: 12px;
-        white-space: pre;
-        font-family: monospace;
-      }
-    </style>
-  </head>
+    }).mount('#app');
+  </script>
 
-  <body>
-    <h1>Server Sent Events</h1>
-    <div>Latest time:</div>
-    <div id="latest">—</div>
-
-    <div id="log"></div>
-
-    <script>
-      const latest = document.getElementById('latest')
-      const log = document.getElementById('log')
-
-      // read `s` from this page's query string and pass to /events
-      const params = new URLSearchParams(window.location.search)
-      const s = params.get('s') || 'AAPL'
-
-      const es = new EventSource(`/events?s=${encodeURIComponent(s)}`)
-
-      es.onmessage = (e) => {
-        const data = JSON.parse(e.data)
-
-        // update latest value with time, price, and change
-        const timeStr = new Date(data.t).toLocaleTimeString()
-        latest.textContent = `${timeStr} — ${data.price ?? data.p ?? '—'} (${data.change ?? data.c ?? '—'})`
-
-        // optional: append log with price and change
-        log.textContent += `${data.t} - ${data.price ?? data.p ?? '—'} (${data.change ?? data.c ?? '—'})\n`
-
-        // keep last ~20 lines only
-        const lines = log.textContent.split('\n').slice(-20)
-        log.textContent = lines.join('\n')
-      }
-
-      es.onerror = (err) => {
-        console.error('SSE error', err)
-        latest.textContent = 'disconnected...'
-      }
-    </script>
-  </body>
+</body>
 </html>

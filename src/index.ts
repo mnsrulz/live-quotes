@@ -1,6 +1,5 @@
-import { ApiException, fromHono } from "chanfana";
+import { ApiException } from "chanfana";
 import { Hono } from "hono";
-import { tasksRouter } from "./endpoints/tasks/router";
 import { ContentfulStatusCode } from "hono/utils/http-status";
 import { streamSSE } from 'hono/streaming';
 import YahooFinance from "yahoo-finance2";
@@ -29,37 +28,29 @@ app.onError((err, c) => {
 	);
 });
 
-// Setup OpenAPI registry
-const openapi = fromHono(app, {
-	docs_url: "/",
-	schema: {
-		info: {
-			title: "My Awesome API",
-			version: "2.0.0",
-			description: "This is the documentation for my awesome API.",
-		},
-	},
-});
-
-// Register Tasks Sub router
-openapi.route("/tasks", tasksRouter);
-
 const yf = new YahooFinance({
 	suppressNotices: ["yahooSurvey"], // optional
 });
 
 app.get("/events", (c) => {
-	const normalizedSymbol = c.req.query("s") || 'AAPL';
+	const normalizedSymbol = c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()) || ['AAPL'];
+	const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
 	return streamSSE(c, async (stream) => {
-		while (!stream.aborted) {
-			const priceData = await fetchPrice(normalizedSymbol);
+		const writePrice = async (symbol: string) => {
+			const priceData = await fetchPrice(symbol);
+			priceData.change = priceData.change.toFixed(2);
 			await stream.writeSSE({
+				event: 'quote',
 				data: JSON.stringify({
 					t: Date.now(),
-					...priceData
+					symbol,
+					...priceData,
+					changePercent: (priceData.change/priceData.price * 100) .toFixed(2)
 				}),
 			})
-			await stream.sleep(300)
+		}
+		while (!stream.aborted) {
+			await Promise.allSettled([...normalizedSymbol.map(writePrice), stream.sleep(interval)]);
 		}
 	})
 });
@@ -90,7 +81,6 @@ async function fetchPrice(symbol: string) {
 			return {
 				price: preMarketPrice,
 				change: preMarketChangeVal,
-				changePercent: preMarketChangePercent,
 				state: "PRE",
 				meta: {
 					preMarketChange: preMarketChangeVal,
@@ -102,7 +92,6 @@ async function fetchPrice(symbol: string) {
 			return {
 				price: regularMarketPrice,
 				change: regularMarketChangeVal + preMarketChangeVal,
-				changePercent: regularMarketChangePercent + preMarketChangePercent,
 				state: "REGULAR",
 				meta: {
 					preMarketChange: preMarketChangeVal,
@@ -114,7 +103,6 @@ async function fetchPrice(symbol: string) {
 			return {
 				price: postMarketPrice,
 				change: preMarketChangeVal + regularMarketChangeVal + postMarketChangeVal,
-				changePercent: regularMarketChangePercent + preMarketChangePercent + postMarketChangePercent,
 				state: "POST",
 				meta: {
 					preMarketChange: preMarketChangeVal,
