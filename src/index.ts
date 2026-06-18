@@ -32,6 +32,10 @@ const yf = new YahooFinance({
 	suppressNotices: ["yahooSurvey"], // optional
 });
 
+app.get('/', (c) => {
+	return c.redirect('/index.htm');
+})
+
 app.get("/events", (c) => {
 	const normalizedSymbol = c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()) || ['AAPL'];
 	const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
@@ -45,7 +49,7 @@ app.get("/events", (c) => {
 					t: Date.now(),
 					symbol,
 					...priceData,
-					changePercent: (priceData.change/priceData.price * 100) .toFixed(2)
+					changePercent: (priceData.change / priceData.price * 100).toFixed(2)
 				}),
 			})
 		}

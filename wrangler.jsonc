@@ -1,7 +1,7 @@
 {
 	"compatibility_date": "2026-05-11",
 	"main": "src/index.ts",
-	"name": "chanfana-openapi-template",
+	"name": "live-quotes",
 	"upload_source_maps": true,
 	"observability": {
 		"enabled": true
@@ -10,6 +10,6 @@
 		"directory": "./static"
 	},
 	"compatibility_flags": [
-    	"nodejs_compat"
-  	]
+		"nodejs_compat"
+	]
 }
