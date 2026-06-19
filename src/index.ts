@@ -57,25 +57,29 @@ app.get("/live-quotes", (c) => {
 				console.error(`Error fetching price for ${symbol}:`, error);
 			}
 		}
-		while (!stream.aborted || !stream.closed) {
+		while (!stream.aborted && !stream.closed) {
 			await Promise.allSettled([...normalizedSymbol.map(writePrice), stream.sleep(interval)]);
 		}
 	})
 });
 
 async function fetchPrice(symbol: string) {
+	const fields = ["marketState",
+		"regularMarketPrice",
+		"regularMarketChange",
+		"postMarketPrice",
+		"postMarketChange",
+		"preMarketPrice",
+		"preMarketChange"];
 	const {
 		marketState,
 		regularMarketPrice,
 		regularMarketChange,
-		regularMarketChangePercent,
 		postMarketPrice,
 		postMarketChange,
-		postMarketChangePercent,
 		preMarketPrice,
 		preMarketChange,
-		preMarketChangePercent,
-	} = await yf.quoteCombine(symbol, {}, {
+	} = await yf.quoteCombine(symbol, { fields }, {
 		validateResult: false
 	}) as any;
 
