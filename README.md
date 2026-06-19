@@ -55,7 +55,7 @@ This redirects to the static `index.htm` client.
 Request:
 
 ```text
-/events?s=AAPL,MSFT&i=2000
+/live-quotes?s=AAPL,MSFT&i=2000
 ```
 
 Query parameters:
