@@ -41,19 +41,23 @@ app.get("/live-quotes", (c) => {
 	const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
 	return streamSSE(c, async (stream) => {
 		const writePrice = async (symbol: string) => {
-			const priceData = await fetchPrice(symbol);
-			priceData.change = priceData.change.toFixed(2);
-			await stream.writeSSE({
-				event: 'quote',
-				data: JSON.stringify({
-					t: Date.now(),
-					symbol,
-					...priceData,
-					changePercent: (priceData.change / priceData.price * 100).toFixed(2)
-				}),
-			})
+			try {
+				const priceData = await fetchPrice(symbol);
+				priceData.change = priceData.change.toFixed(2);
+				await stream.writeSSE({
+					event: 'quote',
+					data: JSON.stringify({
+						t: Date.now(),
+						symbol,
+						...priceData,
+						changePercent: (priceData.change / priceData.price * 100).toFixed(2)
+					}),
+				})
+			} catch (error) {
+				console.error(`Error fetching price for ${symbol}:`, error);
+			}
 		}
-		while (!stream.aborted) {
+		while (!stream.aborted || !stream.closed) {
 			await Promise.allSettled([...normalizedSymbol.map(writePrice), stream.sleep(interval)]);
 		}
 	})
