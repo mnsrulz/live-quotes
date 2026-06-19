@@ -159,7 +159,7 @@
           streamStatus.value = 'connecting'; 
 
           // Mimicking original artificial network latency simulation block
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          // await new Promise(resolve => setTimeout(resolve, 1500));
 
           es = new EventSource(`/live-quotes?s=${encodeURIComponent(symbols.value)}`);
           

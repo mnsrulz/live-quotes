@@ -1,6 +1,8 @@
 # Live Quotes
 
-A Cloudflare Workers app that streams live stock quotes from Yahoo Finance using Hono, Chanfana, and Server-Sent Events (SSE).
+A Cloudflare Workers app that streams live stock quotes from Yahoo Finance using Hono, yahoo-finance2, and Server-Sent Events (SSE).
+
+This project relies on the `yahoo-finance2` library for all quote retrieval and market state data. The package is community-maintained Yahoo Finance client available at https://github.com/gadicc/yahoo-finance2.
 
 ## Features
 
@@ -9,6 +11,7 @@ A Cloudflare Workers app that streams live stock quotes from Yahoo Finance using
 - Supports one or more comma-separated symbols via `s`
 - Supports custom polling interval via `i` (milliseconds)
 - Uses `yahoo-finance2` to fetch latest market, pre-market, and post-market prices
+- Powered by `yahoo-finance2` for live quote retrieval and market state detection
 - Includes global error handling with Chanfana API exception support
 
 ## Project structure
