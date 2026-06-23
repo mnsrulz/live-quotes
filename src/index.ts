@@ -103,7 +103,7 @@ async function fetchPrice(symbol: string) {
 		case "REGULAR":
 			return {
 				price: regularMarketPrice,
-				change: regularMarketChangeVal + preMarketChangeVal,
+				change: regularMarketChangeVal,
 				state: "REGULAR",
 				meta: {
 					preMarketChange: preMarketChangeVal,
@@ -114,7 +114,7 @@ async function fetchPrice(symbol: string) {
 		default:
 			return {
 				price: postMarketPrice,
-				change: preMarketChangeVal + regularMarketChangeVal + postMarketChangeVal,
+				change: regularMarketChangeVal + postMarketChangeVal,
 				state: "POST",
 				meta: {
 					preMarketChange: preMarketChangeVal,
