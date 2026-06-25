@@ -125,6 +125,8 @@
       setup() {
         const savedSymbols = localStorage.getItem('selected_symbols');
         const symbols = ref(savedSymbols || 'AAPL,MSFT,NVDA');
+        let lastQuoteTimestamp = ref(Date.now());
+        let watchdogInterval = null;
 
         const quotes = ref({});
         
@@ -152,10 +154,20 @@
             currency: 'USD'
           }).format(val);
         };
-        
+
         const connect = async () => {
           if (es) es.close();
-          quotes.value = {}; 
+          // quotes.value = {}; 
+          
+          const parsedSymbols = new Set(symbols.value.toUpperCase().split(',').map(k=> k.trim()).filter(Boolean));
+          const quoteSymbols = Object.keys(quotes.value);
+          //remove quotes which are not present in the parsed symbols
+          quoteSymbols.forEach(sym => {
+            if (!parsedSymbols.has(sym)) {
+              delete quotes.value[sym];
+            }
+          });
+
           streamStatus.value = 'connecting'; 
 
           // Mimicking original artificial network latency simulation block
@@ -168,6 +180,7 @@
           };
 
           es.addEventListener('quote', (e) => {
+            lastQuoteTimestamp.value = Date.now();
             const data = JSON.parse(e.data);
             const sym = data.symbol;
             const oldData = quotes.value[sym];
@@ -203,14 +216,21 @@
             }
           };
         };
-
+        
         onMounted(() => {
           window.addEventListener('keydown', handleGlobalKeyDown);
           connect();
+          watchdogInterval = setInterval(() => {
+            if (Date.now() - lastQuoteTimestamp.value > 30000) {
+              // If no quote has been received in the last 30 seconds, reconnect
+              connect();
+            }
+          }, 10000);
         });
 
         onUnmounted(() => {
           window.removeEventListener('keydown', handleGlobalKeyDown);
+          clearInterval(watchdogInterval);
         });
 
         return { symbols, quotes, streamStatus, connect, formatCurrency, inputField };

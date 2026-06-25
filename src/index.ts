@@ -1,6 +1,4 @@
-import { ApiException } from "chanfana";
 import { Hono } from "hono";
-import { ContentfulStatusCode } from "hono/utils/http-status";
 import { streamSSE } from 'hono/streaming';
 import YahooFinance from "yahoo-finance2";
 
@@ -8,14 +6,6 @@ import YahooFinance from "yahoo-finance2";
 const app = new Hono();
 
 app.onError((err, c) => {
-	if (err instanceof ApiException) {
-		// If it's a Chanfana ApiException, let Chanfana handle the response
-		return c.json(
-			{ success: false, errors: err.buildResponse() },
-			err.status as ContentfulStatusCode,
-		);
-	}
-
 	console.error("Global error handler caught:", err); // Log the error if it's not known
 
 	// For other errors, return a generic 500 response
@@ -37,9 +27,10 @@ app.get('/', (c) => {
 })
 
 app.get("/live-quotes", (c) => {
-	const normalizedSymbol = c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()) || ['AAPL'];
+	const normalizedSymbol = new Set(c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) || ['AAPL']);
 	const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
 	return streamSSE(c, async (stream) => {
+		let anySuccessfulFetch = false;
 		const writePrice = async (symbol: string) => {
 			try {
 				const priceData = await fetchPrice(symbol);
@@ -53,12 +44,18 @@ app.get("/live-quotes", (c) => {
 						changePercent: (priceData.change / priceData.price * 100).toFixed(2)
 					}),
 				})
+				anySuccessfulFetch = true;
 			} catch (error) {
 				console.error(`Error fetching price for ${symbol}:`, error);
 			}
 		}
 		while (!stream.aborted && !stream.closed) {
-			await Promise.allSettled([...normalizedSymbol.map(writePrice), stream.sleep(interval)]);
+			anySuccessfulFetch = false;	//reset flag
+			await Promise.allSettled([...normalizedSymbol.values().map(writePrice), stream.sleep(interval)]);
+			if (!anySuccessfulFetch) {
+				console.error("All price fetches failed");
+				stream.abort();
+			}
 		}
 	})
 });

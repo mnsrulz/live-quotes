@@ -12,7 +12,6 @@ This project relies on the `yahoo-finance2` library for all quote retrieval and 
 - Supports custom polling interval via `i` (milliseconds)
 - Uses `yahoo-finance2` to fetch latest market, pre-market, and post-market prices
 - Powered by `yahoo-finance2` for live quote retrieval and market state detection
-- Includes global error handling with Chanfana API exception support
 
 ## Project structure
 
