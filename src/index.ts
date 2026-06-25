@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { streamSSE } from 'hono/streaming';
 import YahooFinance from "yahoo-finance2";
 
+const MAX_REQUESTS_PER_INVOCATION = 50;	// in CF - 60 requests is what they allow per invocation. So capping at 50 to be safe
+
 // Start a Hono app
 const app = new Hono();
 
@@ -29,6 +31,7 @@ app.get('/', (c) => {
 app.get("/live-quotes", (c) => {
 	const normalizedSymbol = new Set(c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) || ['AAPL']);
 	const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
+	let requestCount = 0;
 	return streamSSE(c, async (stream) => {
 		let anySuccessfulFetch = false;
 		const writePrice = async (symbol: string) => {
@@ -49,7 +52,7 @@ app.get("/live-quotes", (c) => {
 				console.error(`Error fetching price for ${symbol}:`, error);
 			}
 		}
-		while (!stream.aborted && !stream.closed) {
+		while (!stream.aborted && !stream.closed && requestCount++ < MAX_REQUESTS_PER_INVOCATION) {
 			anySuccessfulFetch = false;	//reset flag
 			await Promise.allSettled([...normalizedSymbol.values().map(writePrice), stream.sleep(interval)]);
 			if (!anySuccessfulFetch) {
