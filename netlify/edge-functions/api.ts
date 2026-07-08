@@ -1,7 +1,7 @@
 import { Hono } from "https://esm.sh/hono@4.12";
 import { handle } from "https://esm.sh/hono@4.12/netlify";
 import { streamSSE } from 'https://esm.sh/hono@4.12/streaming';
-import YahooFinance from "yahoo-finance2";
+import YahooFinance from "https://esm.sh/yahoo-finance2";
 
 const MAX_REQUESTS_PER_INVOCATION = 50;
 
