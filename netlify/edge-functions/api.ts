@@ -25,7 +25,7 @@ const yf = new YahooFinance({
     suppressNotices: ["yahooSurvey"], // optional
 });
 
-app.get('/', (c) => {
+app.get('/hello', (c) => {
     return c.json({
         "message": "hello"
     });
