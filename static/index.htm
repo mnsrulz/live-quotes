@@ -173,7 +173,7 @@
           // Mimicking original artificial network latency simulation block
           // await new Promise(resolve => setTimeout(resolve, 1500));
 
-          es = new EventSource(`/live-quotes?s=${encodeURIComponent(symbols.value)}`);
+          es = new EventSource(`/api/live-quotes?s=${encodeURIComponent(symbols.value)}`);
           
           es.onopen = () => {
             streamStatus.value = 'live'; 
