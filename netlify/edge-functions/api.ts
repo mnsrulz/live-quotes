@@ -2,11 +2,16 @@ import { Hono } from "https://esm.sh/hono@4.12";
 import { handle } from "https://esm.sh/hono@4.12/netlify";
 import { streamSSE } from 'https://esm.sh/hono@4.12/streaming';
 import YahooFinance from "https://esm.sh/yahoo-finance2";
-
+const instanceId = crypto.randomUUID();
 const MAX_REQUESTS_PER_INVOCATION = 50;
 
 // Start a Hono app
 const app = new Hono();
+
+app.use("*", async (c, next) => {
+  await next();
+  c.header("x-server-instance-id", instanceId);
+});
 
 app.onError((err, c) => {
     console.error("Global error handler caught:", err); // Log the error if it's not known
@@ -127,6 +132,8 @@ async function fetchPrice(symbol: string) {
             };
     }
 }
+
+console.info(`App started with instance: ${instanceId}`)
 
 export const config = { path: "/api/*" };
 export default handle(app);
