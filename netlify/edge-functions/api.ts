@@ -25,13 +25,13 @@ const yf = new YahooFinance({
     suppressNotices: ["yahooSurvey"], // optional
 });
 
-app.get('/hello', (c) => {
+app.get('/api/hello', (c) => {
     return c.json({
         "message": "hello"
     });
 })
 
-app.get("/live-quotes", (c) => {
+app.get("/api/live-quotes", (c) => {
     const normalizedSymbol = new Set(c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) || ['AAPL']);
     const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
     let requestCount = 0;
