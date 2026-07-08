@@ -25,13 +25,13 @@ const yf = new YahooFinance({
     suppressNotices: ["yahooSurvey"], // optional
 });
 
-app.get('/api/hello', (c) => {
+app.get('/hello', (c) => {
     return c.json({
         "message": "hello"
     });
 })
 
-app.get("/api/live-quotes", (c) => {
+app.get("/live-quotes", (c) => {
     const normalizedSymbol = new Set(c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) || ['AAPL']);
     const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
     let requestCount = 0;
@@ -128,5 +128,5 @@ async function fetchPrice(symbol: string) {
     }
 }
 
-export const config = { path: "/api/*" };
+export const config = { path: "/*" };
 export default handle(app);
