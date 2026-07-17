@@ -41,12 +41,24 @@ app.get('/price', async (c) => {
 	const s = c.req.query("s") || '';
 	const dt = c.req.query("dt") || '';
 	const f = (c.req.query("f") || '0') == '1';
-	const o = (c.req.query("o") || '1') == '1';
+	const o = (c.req.query("o") || '1') == '1';	//keep original value
 
 	const price = await getPriceAtDate(s, dt, f, o);
 
 	return c.json({
 		price
+	})
+})
+
+app.get('/historical-prices', async (c) => {
+	const s = c.req.query("s") || '';
+	const n = parseInt(c.req.query("n") || '7');
+	const i = (c.req.query("i") || 'd') as 'd' | 'h';
+	
+	const prices = await getLastNPrices(s, n, i);
+
+	return c.json({
+		prices
 	})
 })
 
@@ -167,6 +179,17 @@ async function getPriceAtDate(symbol: string, dt: string, fallbackToPreviousDayW
 		console.error(`Error fetching price for ${symbol} on ${dt}:`, error);
 		return null;
 	}
+}
+
+export const getLastNPrices = async (symbol: string, lastN: number, interval: 'd' | 'h') => {
+    const t = Math.ceil(interval == 'h' ? Math.ceil((lastN * 1.2) / 40) : Math.ceil((lastN * 1.2) / 5));       //take extra couple days of data just to be sure we have enough data
+    const start = dayjs().format('YYYY-MM-DD');
+    const resp = await yf.chart(EXCEPTION_SYMBOLS[symbol.toUpperCase()] || symbol, {
+        interval: interval == 'd' ? '1d' : '1h',
+        period1: dayjs(start).add(-t, 'week').toDate(),
+        period2: dayjs(start).toDate()
+    })
+    return resp.quotes.map(({ close, date }) => ({ close, date })).filter(k => k.close != null).map(({ close, date }) => ({ date, close: Number(close) })).slice(-lastN);
 }
 
 // Export the Hono app
