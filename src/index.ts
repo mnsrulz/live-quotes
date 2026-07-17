@@ -1,6 +1,15 @@
 import { Hono } from "hono";
 import { streamSSE } from 'hono/streaming';
 import YahooFinance from "yahoo-finance2";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import isToday from "dayjs/plugin/isToday";
+import timezone from "dayjs/plugin/timezone";
+import "dayjs/locale/en";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(isToday);
 
 const MAX_REQUESTS_PER_INVOCATION = 50;	// in CF - 60 requests is what they allow per invocation. So capping at 50 to be safe
 
@@ -26,6 +35,19 @@ const yf = new YahooFinance({
 
 app.get('/', (c) => {
 	return c.redirect('/index.htm');
+})
+
+app.get('/price', async (c) => {
+	const s = c.req.query("s") || '';
+	const dt = c.req.query("dt") || '';
+	const f = (c.req.query("f") || '0') == '1';
+	const o = (c.req.query("o") || '1') == '1';
+
+	const price = await getPriceAtDate(s, dt, f, o);
+
+	return c.json({
+		price
+	})
 })
 
 app.get("/live-quotes", (c) => {
@@ -122,6 +144,28 @@ async function fetchPrice(symbol: string) {
 					postMarketChange: postMarketChangeVal
 				}
 			};
+	}
+}
+
+const EXCEPTION_SYMBOLS = {
+	'SPX': '^SPX',
+	'VIX': '^VIX',
+} as Record<string, string>
+
+
+async function getPriceAtDate(symbol: string, dt: string, fallbackToPreviousDayWhenNoPriceFound: boolean, keepOriginalValue: boolean) {
+	try {
+		const start = dayjs(dt.substring(0, 10)).format('YYYY-MM-DD');
+		const resp = await yf.chart(EXCEPTION_SYMBOLS[symbol.toUpperCase()] || symbol, {
+			interval: '1d',
+			period1: dayjs(start).add(-7, 'day').toDate(),
+			period2: dayjs(start).toDate()
+		})
+		const priceToReturn = fallbackToPreviousDayWhenNoPriceFound ? resp.quotes.reverse().find(k => k.close != null)?.close : resp.quotes.at(-1)?.close;
+		return keepOriginalValue ? priceToReturn : priceToReturn?.toFixed(2);
+	} catch (error) {
+		console.error(`Error fetching price for ${symbol} on ${dt}:`, error);
+		return null;
 	}
 }
 
