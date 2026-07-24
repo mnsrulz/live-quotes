@@ -17,7 +17,7 @@ app.use("*", async (c, next) => {
 });
 
 app.onError((err, c) => {
-    console.error("Global error handler caught:", err); // Log the error if it's not known
+    console.error("Global error handler caught:", (err as Error).message); // Log the error if it's not known
 
     // For other errors, return a generic 500 response
     return c.json(
@@ -60,7 +60,7 @@ app.get("/api/live-quotes", (c) => {
                 })
                 anySuccessfulFetch = true;
             } catch (error) {
-                console.error(`Error fetching price for ${symbol}:`, error);
+                console.error(`Error fetching price for ${symbol}:`, (error as Error).message);
             }
         }
         while (!stream.aborted && !stream.closed && requestCount++ < MAX_REQUESTS_PER_INVOCATION) {
