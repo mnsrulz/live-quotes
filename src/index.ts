@@ -62,6 +62,12 @@ app.get('/historical-prices', async (c) => {
 	})
 })
 
+app.get('/ohlc', async (c) => {
+	const s = c.req.query("s") || '';
+	const prices = await getLastNPrices(s, 365, 'd');
+	return c.json(prices);
+})
+
 app.get("/live-quotes", (c) => {
 	const normalizedSymbol = new Set(c.req.query("s")?.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) || ['AAPL']);
 	const interval = c.req.query("i") ? parseInt(c.req.query("i")!) : 1000;
@@ -189,7 +195,9 @@ export const getLastNPrices = async (symbol: string, lastN: number, interval: 'd
         period1: dayjs(start).add(-t, 'week').toDate(),
         period2: dayjs(start).toDate()
     })
-    return resp.quotes.map(({ close, date }) => ({ close, date })).filter(k => k.close != null).map(({ close, date }) => ({ date, close: Number(close) })).slice(-lastN);
+    return resp.quotes.map(({ close, date, open, high, low, volume, adjclose }) => ({ close, date, open, high, low, volume, adjclose }))
+		.filter(k => k.close != null)
+		.map(({ close, date, adjclose, high, low, open, volume }) => ({ date: date.toISOString().slice(0, 10), close: Number(close), open, high, low, volume, adjclose })).slice(-lastN);
 }
 
 // Export the Hono app
