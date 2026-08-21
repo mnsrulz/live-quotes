@@ -190,11 +190,28 @@ async function getPriceAtDate(symbol: string, dt: string, fallbackToPreviousDayW
 export const getLastNPrices = async (symbol: string, lastN: number, interval: 'd' | 'h') => {
     const t = Math.ceil(interval == 'h' ? Math.ceil((lastN * 1.2) / 40) : Math.ceil((lastN * 1.2) / 5));       //take extra couple days of data just to be sure we have enough data
     const start = dayjs().format('YYYY-MM-DD');
-    const resp = await yf.chart(EXCEPTION_SYMBOLS[symbol.toUpperCase()] || symbol, {
-        interval: interval == 'd' ? '1d' : '1h',
-        period1: dayjs(start).add(-t, 'week').toDate(),
-        period2: dayjs(start).toDate()
-    })
+	let resp;
+	try {
+		resp = await yf.chart(EXCEPTION_SYMBOLS[symbol.toUpperCase()] || symbol, {
+			interval: interval == 'd' ? '1d' : '1h',
+			period1: dayjs(start).add(-t, 'week').toDate(),
+			period2: dayjs(start).toDate()
+		});
+	} catch (error: any) {
+		console.error("Yahoo chart error", {
+			symbol,
+			interval,
+			period1: dayjs(start).add(-t, 'week').toISOString(),
+			period2: dayjs(start).toISOString(),
+			name: error?.name,
+			message: error?.message,
+			code: error?.code,
+			statusCode: error?.statusCode,
+			errors: error?.errors,
+			cause: error?.cause,
+		});
+		throw error;
+	}
     return resp.quotes.map(({ close, date, open, high, low, volume, adjclose }) => ({ close, date, open, high, low, volume, adjclose }))
 		.filter(k => k.close != null)
 		.map(({ close, date, adjclose, high, low, open, volume }) => ({ date: date.toISOString().slice(0, 10), close: Number(close), open, high, low, volume, adjclose })).slice(-lastN);
