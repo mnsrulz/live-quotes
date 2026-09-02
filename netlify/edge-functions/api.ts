@@ -48,14 +48,14 @@ app.get("/api/live-quotes", (c) => {
         const writePrice = async (symbol: string) => {
             try {
                 const priceData = await fetchPrice(symbol);
-                priceData.change = priceData.change.toFixed(2);
+                priceData.change = Math.round(priceData.change * 100) / 100;
                 await stream.writeSSE({
                     event: 'quote',
                     data: JSON.stringify({
                         t: Date.now(),
                         symbol,
                         ...priceData,
-                        changePercent: (priceData.change / priceData.price * 100).toFixed(2)
+                        changePercent: Math.round((priceData.change / priceData.price * 100) * 100) / 100
                     }),
                 })
                 anySuccessfulFetch = true;
