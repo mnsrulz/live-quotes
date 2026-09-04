@@ -90,7 +90,7 @@ async function fetchPrice(symbol: string) {
         postMarketChange,
         preMarketPrice,
         preMarketChange,
-    } = await yf.quoteCombine(symbol, { fields }, {
+    } = await yf.quoteCombine(symbol === 'SPX' ? '^SPX' : symbol, { fields }, {
         validateResult: false
     }) as any;
 
