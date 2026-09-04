@@ -64,7 +64,8 @@ app.get('/historical-prices', async (c) => {
 
 app.get('/ohlc', async (c) => {
 	const s = c.req.query("s") || '';
-	const prices = await getLastNPrices(s, 365, 'd');
+	const n = Number(c.req.query("n")) || 365;
+	const prices = await getLastNPrices(s, n, 'd');
 	return c.json(prices);
 })
 
