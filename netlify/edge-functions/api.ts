@@ -74,7 +74,7 @@ app.get("/api/live-quotes", (c) => {
     })
 });
 
-async function fetchPrice(symbol: string) {
+export async function fetchPrice(symbol: string) {
     const fields = ["marketState",
         "regularMarketPrice",
         "regularMarketChange",
@@ -102,7 +102,7 @@ async function fetchPrice(symbol: string) {
     switch (marketState) {
         case "PRE":
             return {
-                price: preMarketPrice,
+                price: preMarketPrice || regularMarketPrice,
                 change: preMarketChangeVal,
                 state: "PRE",
                 meta: {
@@ -124,7 +124,7 @@ async function fetchPrice(symbol: string) {
             };
         default:
             return {
-                price: postMarketPrice,
+                price: postMarketPrice || regularMarketPrice,
                 change: regularMarketChangeVal + postMarketChangeVal,
                 state: "POST",
                 meta: {
