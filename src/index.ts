@@ -196,14 +196,14 @@ export const getLastNPrices = async (symbol: string, lastN: number, interval: 'd
 		resp = await yf.chart(EXCEPTION_SYMBOLS[symbol.toUpperCase()] || symbol, {
 			interval: interval == 'd' ? '1d' : '1h',
 			period1: dayjs(start).add(-t, 'week').toDate(),
-			period2: dayjs(start).toDate()
+			period2: dayjs(start).add(1, 'day').toDate()
 		});
 	} catch (error: any) {
 		console.error("Yahoo chart error", {
 			symbol,
 			interval,
 			period1: dayjs(start).add(-t, 'week').toISOString(),
-			period2: dayjs(start).toISOString(),
+			period2: dayjs(start).add(1, 'day').toISOString(),
 			name: error?.name,
 			message: error?.message,
 			code: error?.code,
